@@ -1,157 +1,111 @@
 class PomodoroTimer {
     constructor() {
-        this.defaultSettings = {
-            focusTime: 25,
-            shortBreak: 5,
-            longBreak: 15,
-            sessionsUntilLongBreak: 4,
-            soundEnabled: true,
-            selectedSound: 'bell'
-        };
-
-        this.currentSession = {
-            timeLeft: 25 * 60, // seconds
-            isRunning: false,
-            mode: 'focus', // 'focus', 'shortBreak', 'longBreak'
-            sessionCount: 0,
-            currentTask: null
-        };
-
-        this.stats = {
-            totalSessions: 0,
-            totalFocusTime: 0,
-            dailyCount: 0,
-            currentStreak: 0,
-            lastSessionDate: null
-        };
-
         this.tasks = [];
-        this.timer = null;
-
+        this.backgroundReady = false;
+        
         this.init();
     }
 
     async init() {
-        await this.loadData();
+        await this.syncWithBackground();
         this.setupEventListeners();
         this.renderUI();
         this.updateDisplay();
-    }
-
-    async loadData() {
-        try {
-            // Load settings
-            const savedSettings = localStorage.getItem('pomodoro-settings');
-            if (savedSettings) {
-                this.settings = { ...this.defaultSettings, ...JSON.parse(savedSettings) };
-            } else {
-                this.settings = { ...this.defaultSettings };
-            }
-
-            // Load current session
-            const savedSession = localStorage.getItem('pomodoro-session');
-            if (savedSession) {
-                this.currentSession = { ...this.currentSession, ...JSON.parse(savedSession) };
-            }
-
-            // Load stats
-            const savedStats = localStorage.getItem('pomodoro-stats');
-            if (savedStats) {
-                this.stats = { ...this.stats, ...JSON.parse(savedStats) };
-            }
-
-            // Load tasks
-            const savedTasks = localStorage.getItem('pomodoro-tasks');
-            if (savedTasks) {
-                this.tasks = JSON.parse(savedTasks);
-            }
-
-            // Check if it's a new day
-            this.checkNewDay();
-        } catch (error) {
-            console.error('Error loading data:', error);
-        }
-    }
-
-    saveData() {
-        try {
-            localStorage.setItem('pomodoro-settings', JSON.stringify(this.settings));
-            localStorage.setItem('pomodoro-session', JSON.stringify(this.currentSession));
-            localStorage.setItem('pomodoro-stats', JSON.stringify(this.stats));
-            localStorage.setItem('pomodoro-tasks', JSON.stringify(this.tasks));
-        } catch (error) {
-            console.error('Error saving data:', error);
-        }
-    }
-
-    checkNewDay() {
-        const today = new Date().toDateString();
-        const lastDate = this.stats.lastSessionDate;
         
-        if (lastDate !== today) {
-            this.stats.dailyCount = 0;
-            this.stats.lastSessionDate = today;
-            this.saveData();
+        // Set up periodic sync with background
+        setInterval(() => {
+            this.syncWithBackground();
+        }, 1000);
+    }
+
+    async syncWithBackground() {
+        try {
+            const response = await chrome.runtime.sendMessage({ action: 'getTimerState' });
+            
+            this.currentSession = {
+                timeLeft: response.timeLeft,
+                isRunning: response.isRunning,
+                mode: response.mode,
+                sessionCount: response.sessionCount
+            };
+            
+            this.settings = response.settings;
+            this.stats = response.stats;
+            this.backgroundReady = true;
+            
+            // Update display if popup is open
+            if (document.getElementById('timeDisplay')) {
+                this.updateDisplay();
+                this.updateStats();
+            }
+        } catch (error) {
+            console.error('Error syncing with background:', error);
+        }
+    }
+
+    async loadTasks() {
+        try {
+            const result = await chrome.storage.local.get('pomodoro-tasks');
+            if (result['pomodoro-tasks']) {
+                this.tasks = result['pomodoro-tasks'];
+            }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        }
+    }
+
+    async saveTasks() {
+        try {
+            await chrome.storage.local.set({ 'pomodoro-tasks': this.tasks });
+        } catch (error) {
+            console.error('Error saving tasks:', error);
         }
     }
 
     setupEventListeners() {
-        // Play/Pause button
-        document.getElementById('playPauseBtn').addEventListener('click', () => {
+        // Timer control buttons
+        document.getElementById('playPauseBtn')?.addEventListener('click', () => {
             this.toggleTimer();
         });
 
-        // Reset button
-        document.getElementById('resetBtn').addEventListener('click', () => {
+        document.getElementById('resetBtn')?.addEventListener('click', () => {
             this.resetTimer();
         });
 
-        // Skip button
-        document.getElementById('skipBtn').addEventListener('click', () => {
+        document.getElementById('skipBtn')?.addEventListener('click', () => {
             this.skipSession();
         });
 
-        // Time selection buttons
+        // Settings buttons
         document.querySelectorAll('.time-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.settings.focusTime = parseInt(e.target.dataset.time);
-                if (this.currentSession.mode === 'focus' && !this.currentSession.isRunning) {
-                    this.currentSession.timeLeft = this.settings.focusTime * 60;
-                    this.updateDisplay();
-                }
-                this.saveData();
+                this.updateFocusTime(parseInt(e.target.dataset.time));
             });
         });
 
-        // Break time selection buttons
         document.querySelectorAll('.break-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.break-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.settings.shortBreak = parseInt(e.target.dataset.time);
-                this.saveData();
+                this.updateBreakTime(parseInt(e.target.dataset.time));
             });
         });
 
         // Task management
-        document.getElementById('addTaskBtn').addEventListener('click', () => {
+        document.getElementById('addTaskBtn')?.addEventListener('click', () => {
             this.toggleTaskInput();
         });
 
-        document.getElementById('saveTaskBtn').addEventListener('click', () => {
+        document.getElementById('saveTaskBtn')?.addEventListener('click', () => {
             this.addTask();
         });
 
-        document.getElementById('newTaskInput').addEventListener('keypress', (e) => {
+        document.getElementById('newTaskInput')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.addTask();
             }
         });
 
         // Task list event delegation
-        document.getElementById('tasksList').addEventListener('click', (e) => {
+        document.getElementById('tasksList')?.addEventListener('click', (e) => {
             if (e.target.classList.contains('task-checkbox')) {
                 const taskId = parseInt(e.target.dataset.taskId);
                 this.toggleTask(taskId);
@@ -162,120 +116,114 @@ class PomodoroTimer {
         });
 
         // Sound selection
-        document.getElementById('soundSelect').addEventListener('change', (e) => {
-            this.settings.selectedSound = e.target.value;
-            this.saveData();
+        document.getElementById('soundSelect')?.addEventListener('change', (e) => {
+            this.updateSoundSetting(e.target.value);
+        });
+
+        // Listen for background timer updates
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.action === 'timerUpdate') {
+                this.handleBackgroundUpdate(message.data);
+            }
         });
     }
 
-    toggleTimer() {
-        if (this.currentSession.isRunning) {
-            this.pauseTimer();
-        } else {
-            this.startTimer();
-        }
-    }
-
-    startTimer() {
-        this.currentSession.isRunning = true;
-        document.getElementById('playPauseIcon').textContent = '⏸';
-        document.querySelector('.timer-circle').classList.add('active');
+    handleBackgroundUpdate(data) {
+        this.currentSession = {
+            timeLeft: data.timeLeft,
+            isRunning: data.isRunning,
+            mode: data.mode,
+            sessionCount: data.sessionCount
+        };
         
-        this.timer = setInterval(() => {
-            this.currentSession.timeLeft--;
-            this.updateDisplay();
-            this.saveData();
-            
-            if (this.currentSession.timeLeft <= 0) {
-                this.completeSession();
-            }
-        }, 1000);
-
-        this.saveData();
-        this.sendMessageToBackground({ action: 'startTimer', data: this.currentSession });
-    }
-
-    pauseTimer() {
-        this.currentSession.isRunning = false;
-        document.getElementById('playPauseIcon').textContent = '▶';
-        document.querySelector('.timer-circle').classList.remove('active');
-        
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
-
-        this.saveData();
-        this.sendMessageToBackground({ action: 'pauseTimer' });
-    }
-
-    resetTimer() {
-        this.pauseTimer();
-        
-        switch (this.currentSession.mode) {
-            case 'focus':
-                this.currentSession.timeLeft = this.settings.focusTime * 60;
-                break;
-            case 'shortBreak':
-                this.currentSession.timeLeft = this.settings.shortBreak * 60;
-                break;
-            case 'longBreak':
-                this.currentSession.timeLeft = this.settings.longBreak * 60;
-                break;
-        }
-        
+        this.stats = data.stats;
         this.updateDisplay();
-        this.saveData();
-    }
-
-    skipSession() {
-        this.completeSession();
-    }
-
-    completeSession() {
-        this.pauseTimer();
-        this.playNotificationSound();
-        
-        if (this.currentSession.mode === 'focus') {
-            this.stats.totalSessions++;
-            this.stats.dailyCount++;
-            this.stats.totalFocusTime += this.settings.focusTime;
-            this.currentSession.sessionCount++;
-            
-            // Determine next break type
-            if (this.currentSession.sessionCount % this.settings.sessionsUntilLongBreak === 0) {
-                this.startBreak('longBreak');
-            } else {
-                this.startBreak('shortBreak');
-            }
-        } else {
-            // Break completed, start focus session
-            this.startFocus();
-        }
-        
         this.updateStats();
-        this.saveData();
-        this.sendNotification();
     }
 
-    startFocus() {
-        this.currentSession.mode = 'focus';
-        this.currentSession.timeLeft = this.settings.focusTime * 60;
-        this.updateDisplay();
+    async toggleTimer() {
+        if (!this.backgroundReady) {
+            await this.syncWithBackground();
+        }
+
+        if (this.currentSession.isRunning) {
+            await chrome.runtime.sendMessage({ action: 'pauseTimer' });
+        } else {
+            await chrome.runtime.sendMessage({ 
+                action: 'startTimer', 
+                data: this.currentSession 
+            });
+        }
+        
+        // Update display immediately for better UX
+        this.currentSession.isRunning = !this.currentSession.isRunning;
+        this.updatePlayPauseButton();
     }
 
-    startBreak(type) {
-        this.currentSession.mode = type;
-        this.currentSession.timeLeft = (type === 'longBreak' ? this.settings.longBreak : this.settings.shortBreak) * 60;
-        this.updateDisplay();
+    async resetTimer() {
+        await chrome.runtime.sendMessage({ action: 'resetTimer' });
+        await this.syncWithBackground();
+    }
+
+    async skipSession() {
+        await chrome.runtime.sendMessage({ action: 'skipSession' });
+        await this.syncWithBackground();
+    }
+
+    async updateFocusTime(minutes) {
+        const updatedSettings = { ...this.settings, focusTime: minutes };
+        await chrome.runtime.sendMessage({ 
+            action: 'updateSettings', 
+            data: updatedSettings 
+        });
+        
+        this.settings = updatedSettings;
+        
+        // Update active button
+        document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-time="${minutes}"]`)?.classList.add('active');
+        
+        // Reset timer if in focus mode and not running
+        if (this.currentSession.mode === 'focus' && !this.currentSession.isRunning) {
+            await this.resetTimer();
+        }
+    }
+
+    async updateBreakTime(minutes) {
+        const updatedSettings = { ...this.settings, shortBreak: minutes };
+        await chrome.runtime.sendMessage({ 
+            action: 'updateSettings', 
+            data: updatedSettings 
+        });
+        
+        this.settings = updatedSettings;
+        
+        // Update active button
+        document.querySelectorAll('.break-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.break-btn[data-time="${minutes}"]`)?.classList.add('active');
+    }
+
+    async updateSoundSetting(soundType) {
+        const updatedSettings = { ...this.settings, selectedSound: soundType };
+        await chrome.runtime.sendMessage({ 
+            action: 'updateSettings', 
+            data: updatedSettings 
+        });
+        
+        this.settings = updatedSettings;
     }
 
     updateDisplay() {
+        if (!this.currentSession) return;
+
         const minutes = Math.floor(this.currentSession.timeLeft / 60);
         const seconds = this.currentSession.timeLeft % 60;
         const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        document.getElementById('timeDisplay').textContent = timeString;
+        const timeElement = document.getElementById('timeDisplay');
+        if (timeElement) {
+            timeElement.textContent = timeString;
+        }
         
         // Update mode display
         const modeText = {
@@ -283,26 +231,61 @@ class PomodoroTimer {
             'shortBreak': 'Short Break',
             'longBreak': 'Long Break'
         };
-        document.getElementById('modeDisplay').textContent = modeText[this.currentSession.mode];
+        
+        const modeElement = document.getElementById('modeDisplay');
+        if (modeElement) {
+            modeElement.textContent = modeText[this.currentSession.mode];
+        }
         
         // Update progress ring
+        this.updateProgressRing();
+        
+        // Update play/pause button
+        this.updatePlayPauseButton();
+        
+        // Update timer circle animation
+        const timerCircle = document.querySelector('.timer-circle');
+        if (timerCircle) {
+            if (this.currentSession.isRunning) {
+                timerCircle.classList.add('active');
+            } else {
+                timerCircle.classList.remove('active');
+            }
+        }
+    }
+
+    updateProgressRing() {
+        if (!this.currentSession || !this.settings) return;
+
         const totalTime = this.getTotalTimeForMode();
         const progress = 1 - (this.currentSession.timeLeft / totalTime);
-        const circumference = 2 * Math.PI * 70; // Updated for new radius
+        const circumference = 2 * Math.PI * 70;
         const offset = circumference * (1 - progress);
         
-        document.querySelector('.progress-ring-progress').style.strokeDashoffset = offset;
-        
-        // Update ring color based on mode
-        const colors = {
-            'focus': '#06d6a0',
-            'shortBreak': '#ffd166',
-            'longBreak': '#f72585'
-        };
-        document.querySelector('.progress-ring-progress').style.stroke = colors[this.currentSession.mode];
+        const progressRing = document.querySelector('.progress-ring-progress');
+        if (progressRing) {
+            progressRing.style.strokeDashoffset = offset;
+            
+            // Update ring color based on mode
+            const colors = {
+                'focus': '#06d6a0',
+                'shortBreak': '#ffd166',
+                'longBreak': '#f72585'
+            };
+            progressRing.style.stroke = colors[this.currentSession.mode];
+        }
+    }
+
+    updatePlayPauseButton() {
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        if (playPauseIcon) {
+            playPauseIcon.textContent = this.currentSession.isRunning ? '⏸' : '▶';
+        }
     }
 
     getTotalTimeForMode() {
+        if (!this.settings) return 1500; // Default 25 minutes
+
         switch (this.currentSession.mode) {
             case 'focus':
                 return this.settings.focusTime * 60;
@@ -316,27 +299,35 @@ class PomodoroTimer {
     }
 
     updateStats() {
-        document.getElementById('dailyCount').textContent = this.stats.dailyCount;
-        document.getElementById('totalPomodoros').textContent = this.stats.totalSessions;
-        document.getElementById('totalTime').textContent = `${Math.floor(this.stats.totalFocusTime / 60)}h`;
-        document.getElementById('currentStreak').textContent = this.stats.currentStreak;
+        if (!this.stats) return;
+
+        const dailyElement = document.getElementById('dailyCount');
+        const totalElement = document.getElementById('totalPomodoros');
+        const timeElement = document.getElementById('totalTime');
+        const streakElement = document.getElementById('currentStreak');
+
+        if (dailyElement) dailyElement.textContent = this.stats.dailyCount;
+        if (totalElement) totalElement.textContent = this.stats.totalSessions;
+        if (timeElement) timeElement.textContent = `${Math.floor(this.stats.totalFocusTime / 60)}h`;
+        if (streakElement) streakElement.textContent = this.stats.currentStreak;
     }
 
-    // Task Management
+    // Task Management Methods
     toggleTaskInput() {
         const taskInput = document.getElementById('taskInput');
-        const isVisible = taskInput.style.display !== 'none';
-        
-        taskInput.style.display = isVisible ? 'none' : 'block';
-        
-        if (!isVisible) {
-            document.getElementById('newTaskInput').focus();
+        if (taskInput) {
+            const isVisible = taskInput.style.display !== 'none';
+            taskInput.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                document.getElementById('newTaskInput')?.focus();
+            }
         }
     }
 
-    addTask() {
+    async addTask() {
         const input = document.getElementById('newTaskInput');
-        const text = input.value.trim();
+        const text = input?.value.trim();
         
         if (text) {
             const task = {
@@ -347,16 +338,33 @@ class PomodoroTimer {
             };
             
             this.tasks.unshift(task);
+            await this.saveTasks();
             this.renderTasks();
-            this.saveData();
             
             input.value = '';
             document.getElementById('taskInput').style.display = 'none';
         }
     }
 
+    async toggleTask(id) {
+        const task = this.tasks.find(t => t.id === id);
+        if (task) {
+            task.completed = !task.completed;
+            await this.saveTasks();
+            this.renderTasks();
+        }
+    }
+
+    async deleteTask(id) {
+        this.tasks = this.tasks.filter(t => t.id !== id);
+        await this.saveTasks();
+        this.renderTasks();
+    }
+
     renderTasks() {
         const tasksList = document.getElementById('tasksList');
+        if (!tasksList) return;
+
         tasksList.innerHTML = '';
         
         this.tasks.slice(0, 5).forEach(task => {
@@ -374,33 +382,14 @@ class PomodoroTimer {
         });
     }
 
-    toggleTask(id) {
-        const task = this.tasks.find(t => t.id === id);
-        if (task) {
-            task.completed = !task.completed;
-            this.renderTasks();
-            this.saveData();
-        }
-    }
-
-    deleteTask(id) {
-        this.tasks = this.tasks.filter(t => t.id !== id);
-        this.renderTasks();
-        this.saveData();
-    }
-
-    // Notification and Sound
+    // Sound generation (runs in popup context)
     playNotificationSound() {
-        if (this.settings.soundEnabled) {
-            this.generateSound(this.settings.selectedSound);
-        }
-    }
+        if (!this.settings?.soundEnabled) return;
 
-    generateSound(soundType) {
         try {
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            switch(soundType) {
+            switch(this.settings.selectedSound) {
                 case 'bell':
                     this.playBellSound(audioContext);
                     break;
@@ -422,7 +411,6 @@ class PomodoroTimer {
     }
 
     playBellSound(audioContext) {
-        // Create a bell-like sound with multiple frequencies
         const frequencies = [800, 1000, 1200];
         const duration = 1.5;
         
@@ -449,8 +437,7 @@ class PomodoroTimer {
     }
 
     playChimeSound(audioContext) {
-        // Create a soft chime sound
-        const frequencies = [523.25, 659.25, 783.99]; // C5, E5, G5
+        const frequencies = [523.25, 659.25, 783.99];
         const duration = 2;
         
         frequencies.forEach((freq, index) => {
@@ -476,7 +463,6 @@ class PomodoroTimer {
     }
 
     playDigitalSound(audioContext) {
-        // Create a digital beep sound
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -496,7 +482,6 @@ class PomodoroTimer {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + duration);
         
-        // Add a second beep
         setTimeout(() => {
             const osc2 = audioContext.createOscillator();
             const gain2 = audioContext.createGain();
@@ -517,10 +502,6 @@ class PomodoroTimer {
     }
 
     playNatureSound(audioContext) {
-        // Create a nature-inspired sound (like a bird chirp)
-        const duration = 1.2;
-        
-        // First chirp
         const osc1 = audioContext.createOscillator();
         const gain1 = audioContext.createGain();
         
@@ -538,7 +519,6 @@ class PomodoroTimer {
         osc1.start(audioContext.currentTime);
         osc1.stop(audioContext.currentTime + 0.3);
         
-        // Second chirp
         setTimeout(() => {
             const osc2 = audioContext.createOscillator();
             const gain2 = audioContext.createGain();
@@ -560,28 +540,19 @@ class PomodoroTimer {
         }, 600);
     }
 
-    sendNotification() {
-        const message = this.currentSession.mode === 'focus' 
-            ? 'Great work! Time for a break.' 
-            : 'Break time is over. Ready to focus?';
-            
-        this.sendMessageToBackground({
-            action: 'showNotification',
-            data: { message }
-        });
-    }
-
-    sendMessageToBackground(message) {
-        if (chrome.runtime && chrome.runtime.sendMessage) {
-            chrome.runtime.sendMessage(message).catch(console.error);
-        }
-    }
-
-    renderUI() {
+    async renderUI() {
+        await this.loadTasks();
+        
+        if (!this.settings) await this.syncWithBackground();
+        
         // Set initial button states
-        document.querySelector(`[data-time="${this.settings.focusTime}"]`)?.classList.add('active');
-        document.querySelector(`.break-btn[data-time="${this.settings.shortBreak}"]`)?.classList.add('active');
-        document.getElementById('soundSelect').value = this.settings.selectedSound;
+        document.querySelector(`[data-time="${this.settings?.focusTime || 25}"]`)?.classList.add('active');
+        document.querySelector(`.break-btn[data-time="${this.settings?.shortBreak || 5}"]`)?.classList.add('active');
+        
+        const soundSelect = document.getElementById('soundSelect');
+        if (soundSelect) {
+            soundSelect.value = this.settings?.selectedSound || 'bell';
+        }
         
         // Render components
         this.renderTasks();

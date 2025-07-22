@@ -2,184 +2,283 @@ class PomodoroBackground {
     constructor() {
         this.isRunning = false;
         this.timeLeft = 0;
-        this.blockerEnabled = false;
-        this.blockedSites = [];
         this.mode = 'focus';
+        this.sessionCount = 0;
+        this.settings = {
+            focusTime: 25,
+            shortBreak: 5,
+            longBreak: 15,
+            sessionsUntilLongBreak: 4,
+            soundEnabled: true,
+            selectedSound: 'bell'
+        };
+        this.stats = {
+            totalSessions: 0,
+            totalFocusTime: 0,
+            dailyCount: 0,
+            currentStreak: 0,
+            lastSessionDate: null
+        };
         
-        this.setupListeners();
+        this.loadData().then(() => {
+            this.setupListeners();
+            this.restoreTimerState();
+        });
+    }
+
+    async loadData() {
+        try {
+            const result = await chrome.storage.local.get([
+                'pomodoro-settings',
+                'pomodoro-session', 
+                'pomodoro-stats'
+            ]);
+            
+            if (result['pomodoro-settings']) {
+                this.settings = { ...this.settings, ...result['pomodoro-settings'] };
+            }
+            
+            if (result['pomodoro-session']) {
+                const session = result['pomodoro-session'];
+                this.timeLeft = session.timeLeft || 0;
+                this.isRunning = session.isRunning || false;
+                this.mode = session.mode || 'focus';
+                this.sessionCount = session.sessionCount || 0;
+            }
+            
+            if (result['pomodoro-stats']) {
+                this.stats = { ...this.stats, ...result['pomodoro-stats'] };
+            }
+
+            this.checkNewDay();
+        } catch (error) {
+            console.error('Error loading background data:', error);
+        }
+    }
+
+    async saveData() {
+        try {
+            const sessionData = {
+                timeLeft: this.timeLeft,
+                isRunning: this.isRunning,
+                mode: this.mode,
+                sessionCount: this.sessionCount
+            };
+
+            await chrome.storage.local.set({
+                'pomodoro-settings': this.settings,
+                'pomodoro-session': sessionData,
+                'pomodoro-stats': this.stats
+            });
+        } catch (error) {
+            console.error('Error saving background data:', error);
+        }
+    }
+
+    checkNewDay() {
+        const today = new Date().toDateString();
+        const lastDate = this.stats.lastSessionDate;
+        
+        if (lastDate !== today) {
+            this.stats.dailyCount = 0;
+            this.stats.lastSessionDate = today;
+            this.saveData();
+        }
     }
 
     setupListeners() {
         // Listen for messages from popup
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            switch (message.action) {
-                case 'startTimer':
-                    this.startTimer(message.data);
-                    break;
-                case 'pauseTimer':
-                    this.pauseTimer();
-                    break;
-                case 'updateBlocker':
-                    this.updateBlocker(message.data);
-                    break;
-                case 'showNotification':
-                    this.showNotification(message.data.message);
-                    break;
-            }
-            return true;
+            this.handleMessage(message, sender, sendResponse);
+            return true; // Keep channel open for async responses
         });
 
-        // Handle tab updates for content script injection
-        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-            if (changeInfo.status === 'complete' && this.isRunning) {
-                chrome.tabs.sendMessage(tabId, {
-                    action: 'updateTimer',
-                    data: {
-                        timeLeft: this.timeLeft,
-                        isRunning: this.isRunning,
-                        mode: this.mode
-                    }
-                }).catch(() => {});
-            }
-        });
-
-        // Create alarms for timer
+        // Handle alarms for timer countdown
         chrome.alarms.onAlarm.addListener((alarm) => {
             if (alarm.name === 'pomodoroTimer') {
-                this.timeLeft = Math.max(0, this.timeLeft - 1);
-                
-                // Update all tabs
-                chrome.tabs.query({}, (tabs) => {
-                    tabs.forEach(tab => {
-                        chrome.tabs.sendMessage(tab.id, {
-                            action: 'updateTimer',
-                            data: {
-                                timeLeft: this.timeLeft,
-                                isRunning: this.isRunning,
-                                mode: this.mode
-                            }
-                        }).catch(() => {});
-                    });
-                });
-
-                this.updateBadge();
-
-                if (this.timeLeft <= 0) {
-                    this.completeSession();
-                }
+                this.handleTimerTick();
             }
+        });
+
+        // Handle extension startup/install
+        chrome.runtime.onStartup.addListener(() => {
+            this.restoreTimerState();
+        });
+
+        chrome.runtime.onInstalled.addListener(() => {
+            this.restoreTimerState();
         });
     }
 
-    async updateBlocker(data) {
-        this.blockerEnabled = data.enabled;
-        this.blockedSites = data.sites;
-        
-        if (this.blockerEnabled && this.isRunning && this.mode === 'focus') {
-            await this.enableBlocking();
-        } else {
-            await this.disableBlocking();
+    async handleMessage(message, sender, sendResponse) {
+        switch (message.action) {
+            case 'getTimerState':
+                sendResponse({
+                    timeLeft: this.timeLeft,
+                    isRunning: this.isRunning,
+                    mode: this.mode,
+                    sessionCount: this.sessionCount,
+                    settings: this.settings,
+                    stats: this.stats
+                });
+                break;
+                
+            case 'startTimer':
+                await this.startTimer(message.data);
+                sendResponse({ success: true });
+                break;
+                
+            case 'pauseTimer':
+                await this.pauseTimer();
+                sendResponse({ success: true });
+                break;
+                
+            case 'resetTimer':
+                await this.resetTimer();
+                sendResponse({ success: true });
+                break;
+                
+            case 'skipSession':
+                await this.completeSession();
+                sendResponse({ success: true });
+                break;
+                
+            case 'updateSettings':
+                this.settings = { ...this.settings, ...message.data };
+                await this.saveData();
+                sendResponse({ success: true });
+                break;
+                
+            case 'updateStats':
+                this.stats = { ...this.stats, ...message.data };
+                await this.saveData();
+                sendResponse({ success: true });
+                break;
+                
+            case 'showNotification':
+                this.showNotification(message.data.message);
+                sendResponse({ success: true });
+                break;
         }
     }
 
-    async enableBlocking() {
-        try {
-            // Remove existing rules
-            const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-            const ruleIdsToRemove = existingRules.map(rule => rule.id);
-            
-            if (ruleIdsToRemove.length > 0) {
-                await chrome.declarativeNetRequest.updateDynamicRules({
-                    removeRuleIds: ruleIdsToRemove
-                });
-            }
-
-            // Add new blocking rules
-            const newRules = this.blockedSites.map((site, index) => ({
-                id: index + 1,
-                priority: 1,
-                action: {
-                    type: 'block'
-                },
-                condition: {
-                    urlFilter: `*${site}*`,
-                    resourceTypes: ['main_frame', 'sub_frame', 'xmlhttprequest', 'image', 'script', 'stylesheet']
-                }
-            }));
-
-            if (newRules.length > 0) {
-                await chrome.declarativeNetRequest.updateDynamicRules({
-                    addRules: newRules
-                });
-            }
-
-            console.log('Blocking enabled for sites:', this.blockedSites);
-        } catch (error) {
-            console.error('Error enabling blocking:', error);
+    async startTimer(sessionData = null) {
+        if (sessionData) {
+            this.timeLeft = sessionData.timeLeft;
+            this.mode = sessionData.mode;
+            this.sessionCount = sessionData.sessionCount || this.sessionCount;
         }
-    }
 
-    async disableBlocking() {
-        try {
-            const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-            const ruleIdsToRemove = existingRules.map(rule => rule.id);
-            
-            if (ruleIdsToRemove.length > 0) {
-                await chrome.declarativeNetRequest.updateDynamicRules({
-                    removeRuleIds: ruleIdsToRemove
-                });
-            }
-
-            console.log('Blocking disabled');
-        } catch (error) {
-            console.error('Error disabling blocking:', error);
-        }
-    }
-
-    startTimer(sessionData) {
         this.isRunning = true;
-        this.timeLeft = sessionData.timeLeft;
-        this.mode = sessionData.mode || 'focus';
         
         // Create repeating alarm every second
-        chrome.alarms.create('pomodoroTimer', {
-            delayInMinutes: 1/60,
-            periodInMinutes: 1/60
+        await chrome.alarms.clear('pomodoroTimer');
+        await chrome.alarms.create('pomodoroTimer', {
+            delayInMinutes: 1/60, // 1 second
+            periodInMinutes: 1/60 // Repeat every second
         });
 
-        // Enable blocking if in focus mode
-        if (this.blockerEnabled && this.mode === 'focus') {
-            this.enableBlocking();
+        await this.saveData();
+        this.updateBadge();
+    }
+
+    async pauseTimer() {
+        this.isRunning = false;
+        await chrome.alarms.clear('pomodoroTimer');
+        await this.saveData();
+        this.updateBadge();
+    }
+
+    async resetTimer() {
+        this.isRunning = false;
+        await chrome.alarms.clear('pomodoroTimer');
+        
+        switch (this.mode) {
+            case 'focus':
+                this.timeLeft = this.settings.focusTime * 60;
+                break;
+            case 'shortBreak':
+                this.timeLeft = this.settings.shortBreak * 60;
+                break;
+            case 'longBreak':
+                this.timeLeft = this.settings.longBreak * 60;
+                break;
+        }
+        
+        await this.saveData();
+        this.updateBadge();
+    }
+
+    async handleTimerTick() {
+        if (!this.isRunning) return;
+
+        this.timeLeft = Math.max(0, this.timeLeft - 1);
+        await this.saveData();
+        this.updateBadge();
+
+        // Broadcast timer update to any open popups
+        this.broadcastTimerUpdate();
+
+        if (this.timeLeft <= 0) {
+            await this.completeSession();
+        }
+    }
+
+    async completeSession() {
+        this.isRunning = false;
+        await chrome.alarms.clear('pomodoroTimer');
+
+        // Update stats and determine next session
+        if (this.mode === 'focus') {
+            this.stats.totalSessions++;
+            this.stats.dailyCount++;
+            this.stats.totalFocusTime += this.settings.focusTime;
+            this.sessionCount++;
+            
+            // Determine next break type
+            if (this.sessionCount % this.settings.sessionsUntilLongBreak === 0) {
+                this.startBreak('longBreak');
+            } else {
+                this.startBreak('shortBreak');
+            }
+        } else {
+            // Break completed, start focus session
+            this.startFocus();
         }
 
-        this.updateBadge();
-    }
-
-    pauseTimer() {
-        this.isRunning = false;
-        chrome.alarms.clear('pomodoroTimer');
-        this.disableBlocking();
-        this.updateBadge();
-    }
-
-    completeSession() {
-        this.isRunning = false;
-        chrome.alarms.clear('pomodoroTimer');
-        this.disableBlocking();
-        this.updateBadge();
-        
+        // Show completion notification
         const message = this.mode === 'focus' 
-            ? 'Focus session completed! Time for a break.' 
+            ? 'Great work! Time for a break.' 
             : 'Break time is over. Ready to focus?';
         this.showNotification(message);
+
+        await this.saveData();
+        this.updateBadge();
+        this.broadcastTimerUpdate();
+    }
+
+    startFocus() {
+        this.mode = 'focus';
+        this.timeLeft = this.settings.focusTime * 60;
+    }
+
+    startBreak(type) {
+        this.mode = type;
+        this.timeLeft = (type === 'longBreak' ? this.settings.longBreak : this.settings.shortBreak) * 60;
     }
 
     updateBadge() {
         if (this.isRunning && this.timeLeft > 0) {
             const minutes = Math.floor(this.timeLeft / 60);
             chrome.action.setBadgeText({ text: minutes.toString() });
+            
+            const colors = {
+                'focus': '#06d6a0',
+                'shortBreak': '#ffd166',
+                'longBreak': '#f72585'
+            };
             chrome.action.setBadgeBackgroundColor({ 
-                color: this.mode === 'focus' ? '#06d6a0' : '#ffd166' 
+                color: colors[this.mode] || '#06d6a0'
             });
         } else {
             chrome.action.setBadgeText({ text: '' });
@@ -187,15 +286,49 @@ class PomodoroBackground {
     }
 
     showNotification(message) {
+        if (this.settings.soundEnabled) {
+            // Note: Sound generation would need to be handled in popup
+        }
+        
         chrome.notifications.create({
             type: 'basic',
-            iconUrl: 'icons/icon48.png',
+            iconUrl: 'assets/icons/icon48.png',
             title: 'FocusFlow',
             message: message,
             priority: 2
         });
     }
+
+    broadcastTimerUpdate() {
+        // Send message to popup if it's open
+        chrome.runtime.sendMessage({
+            action: 'timerUpdate',
+            data: {
+                timeLeft: this.timeLeft,
+                isRunning: this.isRunning,
+                mode: this.mode,
+                sessionCount: this.sessionCount,
+                stats: this.stats
+            }
+        }).catch(() => {
+            // Popup is closed, ignore error
+        });
+    }
+
+    async restoreTimerState() {
+        await this.loadData();
+        
+        if (this.isRunning && this.timeLeft > 0) {
+            // Resume timer if it was running
+            await this.startTimer();
+        } else if (this.timeLeft <= 0 && this.isRunning) {
+            // Complete session if time expired while extension was inactive
+            await this.completeSession();
+        }
+        
+        this.updateBadge();
+    }
 }
 
 // Initialize background script
-new PomodoroBackground();
+const pomodoroBackground = new PomodoroBackground();
