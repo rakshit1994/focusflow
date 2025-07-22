@@ -1,0 +1,34 @@
+{
+  "name": "focusflow-extension",
+  "version": "1.0.0",
+  "description": "A modern, feature-rich Pomodoro timer Chrome extension with task management and website blocking",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "echo 'Load extension folder directly in chrome://extensions/ for development'",
+    "start": "npm run dev",
+    "clean": "rm -f *.zip",
+    "lint": "echo 'Linting not configured'",
+    "test": "echo 'No tests configured'"
+  },
+  "keywords": [
+    "chrome-extension",
+    "pomodoro",
+    "productivity",
+    "timer",
+    "focus",
+    "task-management",
+    "website-blocker"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "package.json": "^2.0.1"
+  }
+}

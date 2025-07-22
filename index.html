@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - FocusFlow Chrome Extension</title>
+    <style>
+        :root {
+            --primary-color: #06d6a0;
+            --secondary-color: #118ab2;
+            --accent-color: #ffd166;
+            --text-color: #2c3e50;
+            --light-gray: #f8f9fa;
+            --medium-gray: #6c757d;
+            --border-color: #dee2e6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .header .effective-date {
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .section h2::before {
+            content: "🍅";
+            margin-right: 10px;
+            font-size: 0.8em;
+        }
+
+        .section h3 {
+            color: var(--secondary-color);
+            font-size: 1.3em;
+            margin: 25px 0 15px 0;
+        }
+
+        .section p {
+            margin-bottom: 15px;
+            font-size: 1.05em;
+        }
+
+        .section ul {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        .section li {
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+
+        .highlight-box {
+            background: var(--light-gray);
+            border-left: 4px solid var(--primary-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .highlight-box.important {
+            background: #fff3cd;
+            border-color: var(--accent-color);
+        }
+
+        .highlight-box.security {
+            background: #d1ecf1;
+            border-color: var(--secondary-color);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:nth-child(even) {
+            background: var(--light-gray);
+        }
+
+        .permission-badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .toc {
+            background: var(--light-gray);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .toc h3 {
+            color: var(--text-color);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .toc li {
+            margin: 8px 0;
+        }
+
+        .toc a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        .footer {
+            background: var(--text-color);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .footer p {
+            margin-bottom: 10px;
+        }
+
+        .footer .links {
+            margin-top: 20px;
+        }
+
+        .footer .links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+        }
+
+        .footer .links a:hover {
+            text-decoration: underline;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-safe {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-secure {
+            background: #cce7ff;
+            color: #004085;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .content {
+                padding: 30px 20px;
+            }
+
+            .section h2 {
+                font-size: 1.5em;
+            }
+
+            .data-table {
+                font-size: 0.9em;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Privacy Policy</h1>
+            <div class="subtitle">FocusFlow - Modern Pomodoro Timer Chrome Extension</div>
+            <div class="effective-date">Effective Date: July 22, 2025 | Last Updated: July 22, 2025</div>
+        </header>
+
+        <main class="content">
+            <!-- Table of Contents -->
+            <nav class="toc">
+                <h3>📋 Quick Navigation</h3>
+                <ul>
+                    <li><a href="#overview">Overview</a></li>
+                    <li><a href="#information-collect">Information We Collect</a></li>
+                    <li><a href="#how-we-use">How We Use Your Information</a></li>
+                    <li><a href="#data-storage">Data Storage & Security</a></li>
+                    <li><a href="#permissions">Permissions Explained</a></li>
+                    <li><a href="#your-rights">Your Rights & Control</a></li>
+                    <li><a href="#contact">Contact Information</a></li>
+                </ul>
+            </nav>
+
+            <!-- Overview -->
+            <section class="section" id="overview">
+                <h2>Overview</h2>
+                <div class="highlight-box important">
+                    <p><strong>Privacy-First Design:</strong> FocusFlow is built with privacy as our top priority. All your data stays on your device - we never collect, transmit, or store your personal information on external servers.</p>
+                </div>
+                <p>FocusFlow ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how our Chrome extension handles your information when you use our Pomodoro timer application.</p>
+                
+                <div class="status-indicator status-safe">
+                    ✅ 100% Local Storage - No External Data Collection
+                </div>
+            </section>
+
+            <!-- Information We Collect -->
+            <section class="section" id="information-collect">
+                <h2>Information We Collect</h2>
+                
+                <h3>✅ Data Stored Locally on Your Device</h3>
+                <p>FocusFlow stores all data locally using your browser's localStorage. We store:</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Data Type</th>
+                            <th>Purpose</th>
+                            <th>Examples</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Timer Settings</strong></td>
+                            <td>Remember your preferences</td>
+                            <td>25-minute focus sessions, 5-minute breaks, sound preferences</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Task Data</strong></td>
+                            <td>Manage your daily tasks</td>
+                            <td>Task descriptions, completion status, creation dates</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Usage Statistics</strong></td>
+                            <td>Track your productivity</td>
+                            <td>Session counts, focus time, productivity streaks</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Session State</strong></td>
+                            <td>Resume timer after browser restart</td>
+                            <td>Current timer mode, remaining time</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>❌ Data We Do NOT Collect</h3>
+                <div class="highlight-box security">
+                    <ul>
+                        <li><strong>Personal Information:</strong> No names, emails, or contact details</li>
+                        <li><strong>Browsing History:</strong> We don't track your web activities</li>
+                        <li><strong>Account Data:</strong> No user accounts or login credentials</li>
+                        <li><strong>External Analytics:</strong> No Google Analytics or tracking services</li>
+                        <li><strong>Device Information:</strong> No hardware or system details</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- How We Use Information -->
+            <section class="section" id="how-we-use">
+                <h2>How We Use Your Information</h2>
+                <p>Your data is used exclusively for app functionality:</p>
+                
+                <ul>
+                    <li><strong>Timer Functionality:</strong> Maintaining timer state across browser sessions</li>
+                    <li><strong>Personal Productivity:</strong> Displaying your focus statistics and progress</li>
+                    <li><strong>Task Management:</strong> Storing and managing your daily task list</li>
+                    <li><strong>Settings Persistence:</strong> Remembering your preferred configurations</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <p><strong>No Third-Party Sharing:</strong> Your data is never shared, sold, or transmitted to any external parties, services, or analytics platforms.</p>
+                </div>
+            </section>
+
+            <!-- Data Storage & Security -->
+            <section class="section" id="data-storage">
+                <h2>Data Storage & Security</h2>
+                
+                <h3>🔒 Local Storage Architecture</h3>
+                <p>All data is stored securely within your browser:</p>
+                <ul>
+                    <li>Uses Chrome's localStorage API for data persistence</li>
+                    <li>Data remains encrypted within browser's security sandbox</li>
+                    <li>No external servers, databases, or cloud storage</li>
+                    <li>Data is isolated per browser profile</li>
+                </ul>
+
+                <h3>🛡️ Security Measures</h3>
+                <div class="status-indicator status-secure">
+                    🔐 Browser-Level Security
+                </div>
+                <ul>
+                    <li>Protected by Chrome's built-in security protocols</li>
+                    <li>Sandboxed execution environment</li>
+                    <li>No network communication endpoints</li>
+                    <li>Minimal permission model</li>
+                </ul>
+
+                <h3>📊 Data Format Example</h3>
+                <div class="code-block">
+// Example of data stored locally in your browser
+{
+  "settings": {
+    "focusTime": 25,
+    "shortBreak": 5,
+    "soundEnabled": true,
+    "selectedSound": "bell"
+  },
+  "tasks": [
+    {
+      "id": 1642693200000,
+      "text": "Complete project documentation",
+      "completed": false,
+      "createdAt": "2025-07-22T13:13:20.000Z"
+    }
+  ],
+  "stats": {
+    "totalSessions": 15,
+    "dailyCount": 3,
+    "totalFocusTime": 375,
+    "currentStreak": 5
+  }
+}
+                </div>
+            </section>
+
+            <!-- Permissions -->
+            <section class="section" id="permissions">
+                <h2>Chrome Permissions Explained</h2>
+                <p>Our extension requests minimal permissions for core functionality:</p>
+                
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th>Purpose</th>
+                            <th>Data Access</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="permission-badge">storage</span></td>
+                            <td>Save your settings and tasks locally</td>
+                            <td>Local browser storage only</td>
+                        </tr>
+                        <tr>
+                            <td><span class="permission-badge">activeTab</span></td>
+                            <td>Display floating timer on web pages</td>
+                            <td>Current tab URL only (for widget display)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="permission-badge">tabs</span></td>
+                            <td>Update timer across browser tabs</td>
+                            <td>Tab management only</td>
+                        </tr>
+                        <tr>
+                            <td><span class="permission-badge">alarms</span></td>
+                            <td>Keep timer running when popup is closed</td>
+                            <td>No data access</td>
+                        </tr>
+                        <tr>
+                            <td><span class="permission-badge">notifications</span></td>
+                            <td>Show session completion alerts</td>
+                            <td>No data access</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="highlight-box">
+                    <p><strong>No Broad Permissions:</strong> We don't request access to your browsing history, bookmarks, or other sensitive browser data.</p>
+                </div>
+            </section>
+
+            <!-- Data Retention -->
+            <section class="section" id="data-retention">
+                <h2>Data Retention & Deletion</h2>
+                
+                <h3>📅 Automatic Data Management</h3>
+                <ul>
+                    <li><strong>Persistence:</strong> Data remains until you choose to delete it</li>
+                    <li><strong>Daily Reset:</strong> Daily statistics automatically reset each day</li>
+                    <li><strong>No Expiration:</strong> Your tasks and settings don't expire</li>
+                </ul>
+
+                <h3>🗑️ How to Delete Your Data</h3>
+                <p>You have complete control over data deletion:</p>
+                <ol>
+                    <li><strong>Remove Extension:</strong> Uninstall FocusFlow from Chrome</li>
+                    <li><strong>Clear Browser Data:</strong> Use Chrome's "Clear browsing data" feature</li>
+                    <li><strong>Developer Tools:</strong> Manually clear localStorage via F12 console</li>
+                </ol>
+            </section>
+
+            <!-- Your Rights -->
+            <section class="section" id="your-rights">
+                <h2>Your Rights & Control</h2>
+                
+                <div class="highlight-box">
+                    <h3>🎛️ Complete Data Control</h3>
+                    <p>Since all data is stored locally, you have absolute control over your information.</p>
+                </div>
+
+                <h3>Access Rights</h3>
+                <ul>
+                    <li>View all your data through the extension interface</li>
+                    <li>Access statistics, tasks, and settings anytime</li>
+                    <li>No hidden or encrypted data</li>
+                </ul>
+
+                <h3>Modification Rights</h3>
+                <ul>
+                    <li>Edit or delete tasks individually</li>
+                    <li>Modify all settings and preferences</li>
+                    <li>Reset statistics if desired</li>
+                </ul>
+
+                <h3>Portability Considerations</h3>
+                <ul>
+                    <li>Currently no export/import functionality</li>
+                    <li>Data is browser-specific and profile-specific</li>
+                    <li>Future updates may include backup features</li>
+                </ul>
+            </section>
+
+            <!-- Children's Privacy -->
+            <section class="section" id="children">
+                <h2>Children's Privacy</h2>
+                <p>FocusFlow is safe for users of all ages:</p>
+                <ul>
+                    <li>No personal information collection from any users</li>
+                    <li>No age verification or parental consent required</li>
+                    <li>Educational focus on productivity and time management</li>
+                    <li>No social features or communication capabilities</li>
+                </ul>
+            </section>
+
+            <!-- International Use -->
+            <section class="section" id="international">
+                <h2>International Use & Compliance</h2>
+                
+                <h3>🌍 Global Availability</h3>
+                <ul>
+                    <li>Works worldwide without geographic restrictions</li>
+                    <li>No server-based processing</li>
+                    <li>No cross-border data transfers</li>
+                </ul>
+
+                <h3>📋 GDPR Compliance</h3>
+                <div class="status-indicator status-safe">
+                    ✅ GDPR Compliant by Design
+                </div>
+                <ul>
+                    <li>No personal data collection eliminates most GDPR requirements</li>
+                    <li>Local storage ensures data sovereignty</li>
+                    <li>Users maintain complete control over information</li>
+                </ul>
+            </section>
+
+            <!-- Updates -->
+            <section class="section" id="updates">
+                <h2>Privacy Policy Updates</h2>
+                <p>We may update this policy to reflect:</p>
+                <ul>
+                    <li>New extension features or functionality</li>
+                    <li>Changes in Chrome extension policies</li>
+                    <li>Legal or regulatory requirements</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <p><strong>Notification:</strong> Updates will be posted within the extension and highlighted in update notes. Continued use constitutes acceptance of changes.</p>
+                </div>
+            </section>
+
+            <!-- Contact -->
+            <section class="section" id="contact">
+                <h2>Contact Information</h2>
+                
+                <div class="highlight-box">
+                    <h3>📧 Get Support</h3>
+                    <ul>
+                        <li><strong>Chrome Web Store:</strong> Leave reviews or feedback</li>
+                        <li><strong>Extension Support:</strong> Use Chrome Web Store support channels</li>
+                        <li><strong>Documentation:</strong> Check our FAQ and help resources</li>
+                    </ul>
+                </div>
+
+                <h3>🔍 Privacy Questions</h3>
+                <p>For privacy-related inquiries:</p>
+                <ol>
+                    <li>Review this privacy policy thoroughly</li>
+                    <li>Check Chrome Web Store listing for updates</li>
+                    <li>Submit feedback through official channels</li>
+                </ol>
+            </section>
+
+            <!-- Technical Details -->
+            <section class="section" id="technical">
+                <h2>Technical Implementation</h2>
+                
+                <h3>🔧 Privacy by Design</h3>
+                <ul>
+                    <li><strong>Local-First Architecture:</strong> No external dependencies</li>
+                    <li><strong>Minimal Permissions:</strong> Only essential Chrome APIs</li>
+                    <li><strong>No Network Calls:</strong> Zero external communication</li>
+                    <li><strong>Transparent Code:</strong> Open development practices</li>
+                </ul>
+
+                <h3>🛠️ Security Implementation</h3>
+                <ul>
+                    <li>Content Security Policy (CSP) compliance</li>
+                    <li>Manifest V3 security requirements</li>
+                    <li>Sandboxed execution environment</li>
+                    <li>No inline scripts or unsafe evaluations</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p><strong>FocusFlow - Modern Pomodoro Timer Chrome Extension</strong></p>
+            <p>Version 1.0.0 | Privacy-First Productivity Tool</p>
+            <div class="links">
+                <a href="#overview">Privacy Policy</a>
+                <a href="https://chrome.google.com/webstore" target="_blank">Chrome Web Store</a>
+                <a href="#contact">Support</a>
+            </div>
+            <p style="margin-top: 20px; font-size: 0.9em; opacity: 0.8;">
+                Last Updated: July 22, 2025 | Next Review: January 22, 2026
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

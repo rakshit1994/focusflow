@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Fixed Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🍅</div>
+                <h1>FocusFlow</h1>
+            </div>
+            <div class="stats">
+                <span id="dailyCount">0</span>
+                <small>Today</small>
+            </div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <div class="content-area">
+            <!-- Timer Display -->
+            <div class="timer-section">
+                <div class="timer-circle">
+                    <svg class="progress-ring" width="160" height="160">
+                        <circle class="progress-ring-circle" 
+                                stroke="#e2e8f0" 
+                                stroke-width="6" 
+                                fill="transparent" 
+                                r="70" 
+                                cx="80" 
+                                cy="80"/>
+                        <circle class="progress-ring-progress" 
+                                stroke="#06d6a0" 
+                                stroke-width="6" 
+                                fill="transparent" 
+                                r="70" 
+                                cx="80" 
+                                cy="80"
+                                stroke-dasharray="439.82 439.82"
+                                stroke-dashoffset="439.82"/>
+                    </svg>
+                    <div class="timer-display">
+                        <div class="time" id="timeDisplay">25:00</div>
+                        <div class="mode" id="modeDisplay">Focus Time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="controls">
+                <button class="btn btn-secondary" id="resetBtn">
+                    <span>↻</span>
+                </button>
+                <button class="btn btn-primary" id="playPauseBtn">
+                    <span id="playPauseIcon">▶</span>
+                </button>
+                <button class="btn btn-secondary" id="skipBtn">
+                    <span>⏭</span>
+                </button>
+            </div>
+
+            <!-- Settings -->
+            <div class="settings-section">
+                <div class="setting-group">
+                    <label>Focus Time</label>
+                    <div class="time-selector">
+                        <button class="time-btn active" data-time="25">25m</button>
+                        <button class="time-btn" data-time="30">30m</button>
+                        <button class="time-btn" data-time="45">45m</button>
+                        <button class="time-btn" data-time="60">60m</button>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Break Time</label>
+                    <div class="time-selector">
+                        <button class="break-btn active" data-time="5">5m</button>
+                        <button class="break-btn" data-time="10">10m</button>
+                        <button class="break-btn" data-time="15">15m</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Management -->
+            <div class="tasks-section">
+                <div class="section-header">
+                    <h3>Today's Tasks</h3>
+                    <button class="btn-icon" id="addTaskBtn">+</button>
+                </div>
+                <div class="task-input" id="taskInput" style="display: none;">
+                    <input type="text" placeholder="What are you working on?" id="newTaskInput">
+                    <button class="btn btn-small" id="saveTaskBtn">Add</button>
+                </div>
+                <div class="tasks-list" id="tasksList">
+                    <!-- Tasks will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Website Blocker -->
+<!-- <div class="blocker-section">
+    <div class="section-header">
+        <h3>Website Blocker (0)</h3>
+        <label class="toggle">
+            <input type="checkbox" id="blockerToggle">
+            <span class="slider"></span>
+        </label>
+    </div>
+    
+    <div class="site-input-container">
+        <input type="text" 
+               placeholder="Enter website (e.g., facebook.com)" 
+               id="newSiteInput" 
+               class="site-input"
+               autocomplete="off">
+    </div>
+    
+    <div class="popular-sites">
+        <label class="popular-sites-label">Popular sites to block:</label>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('facebook.com')">Facebook</span>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('twitter.com')">Twitter</span>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('instagram.com')">Instagram</span>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('youtube.com')">YouTube</span>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('reddit.com')">Reddit</span>
+        <span class="popular-site-btn" onclick="timer.addBlockedSite('tiktok.com')">TikTok</span>
+    </div>
+    
+    <div class="blocked-sites" id="blockedSites">
+        #Blocked sites will be dynamically added here
+    </div>
+</div> --> 
+
+
+            <!-- Sound Settings -->
+            <div class="sound-section">
+                <div class="section-header">
+                    <h3>Sounds</h3>
+                    <select id="soundSelect">
+                        <option value="bell">Bell</option>
+                        <option value="chime">Chime</option>
+                        <option value="digital">Digital</option>
+                        <option value="nature">Nature</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-section">
+                <h3>Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalPomodoros">0</div>
+                        <div class="stat-label">Total Sessions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalTime">0h</div>
+                        <div class="stat-label">Focus Time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="currentStreak">0</div>
+                        <div class="stat-label">Streak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
